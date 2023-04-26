@@ -3,10 +3,26 @@ const { initializeDatabase } = require('./db');
 const fs = require('fs');
 const SQL = require('sql-template-strings')
 
+const cors = require('cors'); // Import the cors package
 
 
 const app = express();
 const port = 3000;
+app.use(cors());
+app.use(express.static('public'));
+
+// Wrapper function for db.get() that returns a Promise
+function getPromise(query, params, db) {
+    return new Promise((resolve, reject) => {
+        db.get(query, params, (err, row) => {
+            if (err) {
+                reject(err);
+            } else {
+                resolve(row);
+            }
+        });
+    });
+}
 
 
 
@@ -43,6 +59,7 @@ initializeDatabase((db) => {
         }
 
         // Check that the start and end times are within the allowed times
+        
         const allowedStart = new Date(startDate);
         allowedStart.setUTCHours(8, 30, 0, 0);
         const allowedEnd = new Date(endDate);
@@ -83,32 +100,41 @@ initializeDatabase((db) => {
             console.log(start)
             console.log(end)
 
-            const conflictingAppointment = await db.get(
-                `SELECT id FROM appointments WHERE nurse_id = ${nurse_id}`
-            );
+            // const conflictingAppointment = await db.get(
+            //     `SELECT id FROM appointments WHERE nurse_id = ${nurse_id}`
+            // );
 
-            console.log(nurse_id)
+            // const conflictingAppointment = await db.get(
+            //     `SELECT COUNT(*) as count FROM appointments WHERE nurse_id = ?`, [nurse_id]
+            //   );
 
-            console.log(conflictingAppointment)
+            // console.log(conflictingAppointment.count)
 
-            if (conflictingAppointment !== undefined) {
-                console.log(`Found ${Object.keys(conflictingAppointment).length} conflicting appointments`);
-            } else {
-                console.log("No conflicting appointments found");
-            }
+            try {
+                const overlappingAppointments = await getPromise(
+                  `SELECT COUNT(*) as count FROM appointments WHERE nurse_id = ? AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))`,
+                   [nurse_id, end_time, start_time, start_time, end_time], db
+                );
+          
+                // Check if there are any overlapping appointments
+                if (overlappingAppointments.count > 0) {
+                  console.log(`Found ${overlappingAppointments.count} overlapping appointments with nurse_id ${nurse_id}`);
+                  res.status(400).json({ message: 'Nurse already has an appointment at this time' });
+                  return
+                } else {
+                  console.log("No overlapping appointments found with the specified nurse_id");
+                }
+              } catch (err) {
+                console.error('Error while fetching overlapping appointment count:', err);
+              }
 
-            // if (Object.keys(conflictingAppointment).length == 0) {
-            //     res.status(400).json({ message: 'Nurse has a conflicting appointment.' });
-            //     return;
-            // }
-
+            //Check nurse schedule
             if (start < nurseStartTime || end > nurseEndTime) {
                 res.status(400).json({ message: 'Nurse is not available during requested time.' });
                 return;
             }
 
         }
-
 
         // Check if the appointment is a long appointment
         if (appointment_type_id === 1) {

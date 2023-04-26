@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <!-- Add these lines in the head of your index.html file -->
+
+    <script src='https://cdn.jsdelivr.net/npm/fullcalendar@6.1.6/index.global.min.js'></script>
+    <script src='/script.js'></script>
+
+
+
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Appointments</title>
+    <style>
+        table {
+            border-collapse: collapse;
+            width: 100%;
+        }
+
+        th,
+        td {
+            border: 1px solid #dddddd;
+            text-align: left;
+            padding: 8px;
+        }
+
+        th {
+            background-color: #f2f2f2;
+        }
+    </style>
+</head>
+
+<body>
+    <h1>Appointments</h1>
+    <div id="calendar"></div>
+    <table id="appointmentsTable">
+        <thead>
+            <tr>
+                <th>ID</th>
+                <th>Participant ID</th>
+                <th>Nurse ID</th>
+                <th>Psychologist ID</th>
+                <th>Researcher ID</th>
+                <th>Appointment Type ID</th>
+                <th>Start Time</th>
+                <th>End Time</th>
+            </tr>
+        </thead>
+        <tbody id="appointmentsTableBody">
+        </tbody>
+    </table>
+
+</body>
+
+</html>
