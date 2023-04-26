@@ -1,2 +1,4 @@
 /database.db
 /node_modules
+.cache
+dist
