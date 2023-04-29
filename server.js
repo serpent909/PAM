@@ -1,19 +1,18 @@
 const express = require('express');
 const { initializeDatabase } = require('./Database/db.js');
-const fs = require('fs');
-const SQL = require('sql-template-strings')
+const ResourceBaseAvailabilityChecker = require('./Helpers/resourceBaseAvailabilityCheckerService.js');
 
-const cors = require('cors'); // Import the cors package
+const fs = require('fs');
 const app = express();
 const port = 3000;
-app.use(cors());
+
 app.use(express.static('public'));
+app.use(express.json());
 
-// Read in nurse availability from JSON file
+// Read in nurse trialAvailability from JSON file
 const nurseAvailability = JSON.parse(fs.readFileSync('./Config/nurse_availability.json'));
-const trialDates = JSON.parse(fs.readFileSync('./Config/trial_dates.json'));
-console.log(trialDates)
-
+const researcherAvailability = JSON.parse(fs.readFileSync('./Config/researcher_availability.json'));
+const trialAvailability = JSON.parse(fs.readFileSync('./Config/trial_availability.json'));
 
 // Wrapper function for db.get() that returns a Promise
 function getPromise(query, params, db) {
@@ -28,30 +27,14 @@ function getPromise(query, params, db) {
     });
 }
 
- 
-initializeDatabase((db) => {
-    // Set up middleware to parse JSON in request bodies
-    app.use(express.json());
+initializeDatabase((database) => {
+    db = database;
+    const checker = new ResourceBaseAvailabilityChecker(db, getPromise);
+    console.log("Database initialized")
 
-    // Set up API endpoints
-    app.get('/appointments', (req, res) => {
-        db.all('SELECT * FROM appointments', (err, rows) => {
-            if (err) {
-                console.error(err);
-                res.sendStatus(500);
-            } else {
-                res.json(rows);
-            }
-        });
-    });
-
-    // Set up the range of allowed dates for appointments
-    const startDate = new Date(trialDates.startDate);
-    const endDate = new Date(trialDates.endDate);
-
-    //Post appointments to database
+    //POST appointments endpoint
     app.post('/appointments', async (req, res) => {
-        const { participant_id, nurse_id, psychologist_id, researcher_id, appointment_type_id, start_time, end_time } = req.body;
+        const { participant_id, researcher_id, nurse_id, psychologist_id, room_id, appointment_type_id, start_time, end_time } = req.body;
 
         // Check that the appointment type ID is valid
         if (!Number.isInteger(appointment_type_id) || appointment_type_id < 0 || appointment_type_id > 7) {
@@ -59,77 +42,48 @@ initializeDatabase((db) => {
             return;
         }
 
-        // Check that the start and end times are within the allowed times
-        const allowedStart = new Date(startDate);
-        allowedStart.setUTCHours(8, 30, 0, 0);
-        const allowedEnd = new Date(endDate);
-        allowedEnd.setUTCHours(17, 0, 0, 0);
-        const start = new Date(start_time);
-        const end = new Date(end_time);
+        // Check that the start and end times are within the allowed times for the clinic
+        const requestedStartTime = new Date(start_time);
 
-        if (start < allowedStart || end > allowedEnd) {
-            res.status(400).json({ message: `Appointments can only be made between ${startDate.toISOString()} and ${endDate.toISOString()}.` });
-            return;
+        const requestedEndTime = new Date(end_time);
+
+        // Check that the start and end times are within the allowed times
+        function isWithinTrialPeriod(requestedStartTime, requestedEndTime, trialAvailability) {
+            const dayOfWeek = requestedStartTime.getUTCDay();
+            const daySchedule = trialAvailability.schedule.find(schedule => schedule.day === ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'][dayOfWeek]);
+            if (!daySchedule) {
+                return false;
+            }
+
+            const startScheduleTime = new Date(`${requestedStartTime.toISOString().slice(0, 10)}T${daySchedule.startTime}Z`);
+            const endScheduleTime = new Date(`${requestedStartTime.toISOString().slice(0, 10)}T${daySchedule.endTime}Z`);
+
+            return requestedStartTime >= startScheduleTime && requestedEndTime <= endScheduleTime;
         }
-        if (start.getUTCDay() === 0 || end.getUTCDay() === 0) {
-            res.status(400).json({ message: 'Appointments can only be made on weekdays between 8:30am and 5:00pm, and on Saturdays between 8:30am and 12:00pm.' });
-            return;
-        }
-        if (start.getUTCDay() === 6 && start.getUTCHours() >= 12) {
-            res.status(400).json({ message: 'Appointments can only be made on weekdays between 8:30am and 5:00pm, and on Saturdays between 8:30am and 12:00pm.' });
+
+        if (!isWithinTrialPeriod(requestedStartTime, requestedEndTime, trialAvailability)) {
+            res.status(400).json({ message: 'Invalid appointment time.' });
             return;
         }
 
         // If the appointment type is a screening appointment
         if (appointment_type_id === 0) {
-            // Check if the nurse is available
-            const nurseSchedule = nurseAvailability.schedule.find(schedule => schedule.day === start.toLocaleDateString('en-US', { weekday: 'long' }));
 
-            console.log(nurseSchedule)
+            //Nurse logic
+            const nurseSchedule = nurseAvailability.schedule.find(schedule => schedule.day === requestedStartTime.toLocaleDateString('en-US', { weekday: 'long' }));
+            const researcherSchedule = researcherAvailability.schedule.find(schedule => schedule.day === requestedStartTime.toLocaleDateString('en-US', { weekday: 'long' }));
+            console.log(nurseSchedule, "ns")
 
-            if (!nurseSchedule) {
-                res.status(400).json({ message: 'Nurse is not available during requested time.' });
-                return;
+            const nurseResult = await checker.checkAvailability('Nurse', nurse_id, requestedStartTime, requestedEndTime, nurseSchedule);
+            if (!nurseResult.available) {
+                res.status(400).json(nurseResult.message)
+                return
             }
-            const dayOfWeek = start.getUTCDay();
-            const nurseStartTime = new Date(`2023-05-${dayOfWeek < 10 ? '0' : ''}${dayOfWeek}T${nurseSchedule.startTime}:00Z`);
-            const nurseEndTime = new Date(`2023-08-${dayOfWeek < 10 ? '0' : ''}${dayOfWeek}T${nurseSchedule.endTime}:00Z`);
-
-
-            // const conflictingAppointment = await db.get(
-            //     `SELECT id FROM appointments WHERE nurse_id = ${nurse_id}`
-            // );
-
-            // const conflictingAppointment = await db.get(
-            //     `SELECT COUNT(*) as count FROM appointments WHERE nurse_id = ?`, [nurse_id]
-            //   );
-
-            // console.log(conflictingAppointment.count)
-
-            try {
-                const overlappingAppointments = await getPromise(
-                  `SELECT COUNT(*) as count FROM appointments WHERE nurse_id = ? AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))`,
-                   [nurse_id, end_time, start_time, start_time, end_time], db
-                );
-          
-                // Check if there are any overlapping appointments
-                if (overlappingAppointments.count > 0) {
-                  console.log(`Found ${overlappingAppointments.count} overlapping appointments with nurse_id ${nurse_id}`);
-                  res.status(400).json({ message: 'Nurse already has an appointment at this time' });
-                  return
-                } else {
-                  console.log("No overlapping appointments found with the specified nurse_id");
-                }
-              } catch (err) {
-                console.error('Error while fetching overlapping appointment count:', err);
-              }
-
-            //Check nurse schedule
-            if (start < nurseStartTime || end > nurseEndTime) {
-                res.status(400).json({ message: 'Nurse is not available during requested time.' });
-                return;
+            const researcherResult = await checker.checkAvailability('Researcher', researcher_id, requestedStartTime, requestedEndTime, researcherSchedule);
+            if (!researcherResult.available) {
+                res.status(400).json(researcherResult.message)
+                return
             }
-
         }
 
         // Check if the appointment is a long appointment
@@ -149,21 +103,47 @@ initializeDatabase((db) => {
         }
 
         // If there are no conflicts, add the appointment to the database
-        const sql = 'INSERT INTO appointments (participant_id, nurse_id, psychologist_id, researcher_id, appointment_type_id, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?, ?)';
-        db.run(sql, [participant_id, nurse_id, psychologist_id, researcher_id, appointment_type_id, start_time, end_time], function (err) {
+        const sql = 'INSERT INTO appointments (participant_id, researcher_id, nurse_id, psychologist_id, room_id, appointment_type_id, start_time, end_time) VALUES (?, ?, ?, ?, ?, ?, ?, ?)';
+        db.run(sql, [participant_id, researcher_id, nurse_id, psychologist_id, room_id, appointment_type_id, start_time, end_time], function (err) {
             if (err) {
-                console.error(err);
-                res.sendStatus(500);
+                if (err.code === 'SQLITE_CONSTRAINT' && err.message.includes('UNIQUE constraint failed')) {
+                    console.error('The combination of participant_id and appointment_type_id already exists.');
+                    res.status(400).json({ error: 'The combination of participant_id and appointment_type_id already exists.' });
+                } else {
+                    console.error(err);
+                    res.sendStatus(500);
+                }
             } else {
                 res.status(201).json({ id: this.lastID });
-                console.log("Appointment successfully added")
+                console.log("Appointment successfully added");
             }
         });
     });
+})
 
-
-    // Start the server
-    app.listen(port, () => {
-        console.log(`App listening at http://localhost:${port}`);
+//GET booked appointments endpoint
+app.get('/appointments', (req, res) => {
+    db.all('SELECT * FROM appointments', (err, rows) => {
+        if (err) {
+            console.error(err);
+            res.sendStatus(500);
+        } else {
+            res.json(rows);
+        }
     });
 });
+
+//Get all availability for screening appointments
+//TODO
+
+
+// Start the server
+app.listen(port, () => {
+    console.log(`App listening at http://localhost:${port}`);
+});
+
+
+
+
+
+

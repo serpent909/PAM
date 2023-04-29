@@ -1,6 +1,6 @@
 {
-    "id": 1,
-    "name": "Clinic",
+    "id": 2,
+    "name": "Psychologist 2",
     "schedule": [
       {
         "day": "Monday",
@@ -28,9 +28,16 @@
         "endTime": "17:00"
       },
       {
-        "day": "Friday",
+        "day": "Saturday",
         "startTime": "08:30",
         "endTime": "17:00"
+      }
+    ],
+    "exceptions": [
+      {
+        "date": "",
+        "startTime": "",
+        "endTime": ""
       }
     ]
   }
