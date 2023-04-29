@@ -72,14 +72,13 @@ initializeDatabase((database) => {
             //Nurse logic
             const nurseSchedule = nurseAvailability.schedule.find(schedule => schedule.day === requestedStartTime.toLocaleDateString('en-US', { weekday: 'long' }));
             const researcherSchedule = researcherAvailability.schedule.find(schedule => schedule.day === requestedStartTime.toLocaleDateString('en-US', { weekday: 'long' }));
-            console.log(nurseSchedule, "ns")
 
-            const nurseResult = await checker.checkAvailability('Nurse', nurse_id, requestedStartTime, requestedEndTime, nurseSchedule);
+            const nurseResult = await checker.checkAvailability('Nurse', requestedStartTime, requestedEndTime, nurseSchedule);
             if (!nurseResult.available) {
                 res.status(400).json(nurseResult.message)
                 return
             }
-            const researcherResult = await checker.checkAvailability('Researcher', researcher_id, requestedStartTime, requestedEndTime, researcherSchedule);
+            const researcherResult = await checker.checkAvailability('Researcher', requestedStartTime, requestedEndTime, researcherSchedule);
             if (!researcherResult.available) {
                 res.status(400).json(researcherResult.message)
                 return

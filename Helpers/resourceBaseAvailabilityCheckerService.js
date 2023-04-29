@@ -4,7 +4,7 @@ class ResourceBaseAvailabilityChecker {
         this.getPromise = getPromise;
     }
 
-    async checkAvailability(resourceType, resourceId, requestedStartTime, requestedEndTime, resourceSchedule) {
+    async checkAvailability(resourceType, requestedStartTime, requestedEndTime, resourceSchedule) {
 
         try {
 
@@ -21,7 +21,7 @@ class ResourceBaseAvailabilityChecker {
 
             const overlappingAppointments = await this.getPromise(
                 
-                `SELECT COUNT(*) as count FROM appointments WHERE nurse_id = 3 AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))`,
+                `SELECT COUNT(*) as count FROM appointments WHERE ${resourceType.toLowerCase()}_id AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))`,
                 [requestedEndTime.toISOString(), requestedStartTime.toISOString(), requestedStartTime.toISOString(), requestedEndTime.toISOString()], this.db
 
             );
