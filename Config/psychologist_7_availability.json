@@ -1,8 +1,6 @@
 {
-    "trialPeriod": {
-      "startDate": "2023-05-01",
-      "endDate": "2023-05-31"
-    },
+    "id": 7,
+    "name": "Psychologist 7",
     "schedule": [
       {
         "day": "Monday",
@@ -33,11 +31,13 @@
         "day": "Saturday",
         "startTime": "08:30",
         "endTime": "17:00"
-      },
+      }
+    ],
+    "exceptions": [
       {
-        "day": "Sunday",
-        "startTime": "00:00",
-        "endTime": "00:00"
+        "date": "",
+        "startTime": "",
+        "endTime": ""
       }
     ]
   }
