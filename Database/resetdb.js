@@ -11,7 +11,7 @@ function resetDatabase(db) {
       }
     });
 
-    const schema = fs.readFileSync('schema.sql').toString();
+    const schema = fs.readFileSync('Database/schema.sql').toString();
     db.exec(schema, (err) => {
       if (err) {
         console.error(err.message);

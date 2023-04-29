@@ -1,6 +1,6 @@
 {
   "id": 1,
-  "name": "Jane Smith",
+  "name": "Nurse",
   "schedule": [
     {
       "day": "Monday",
@@ -21,6 +21,11 @@
       "day": "Thursday",
       "startTime": "13:00",
       "endTime": "16:00"
+    },
+    {
+      "day": "Friday",
+      "startTime": "09:00",
+      "endTime": "12:00"
     },
     {
       "day": "Friday",

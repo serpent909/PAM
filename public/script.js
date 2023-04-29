@@ -1,3 +1,4 @@
+//Script to populate appointments tabe
 document.addEventListener('DOMContentLoaded', function() {
 
   async function fetchAppointments() {

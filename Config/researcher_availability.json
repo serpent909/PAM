@@ -1,0 +1,36 @@
+{
+  "id": 1,
+  "name": "Alesha Wells",
+  "schedule": [
+    {
+      "day": "Monday",
+      "startTime": "08:30",
+      "endTime": "17:00"
+    },
+    {
+      "day": "Tuesday",
+      "startTime": "08:30",
+      "endTime": "17:00"
+    },
+    {
+      "day": "Wednesday",
+      "startTime": "08:30",
+      "endTime": "17:00"
+    },
+    {
+      "day": "Thursday",
+      "startTime": "08:30",
+      "endTime": "17:00"
+    },
+    {
+      "day": "Friday",
+      "startTime": "08:30",
+      "endTime": "17:00"
+    },
+    {
+      "day": "Saturday",
+      "startTime": "08:30",
+      "endTime": "17:00"
+    }
+  ]
+}

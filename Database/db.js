@@ -7,7 +7,7 @@ function initializeDatabase(callback) {
       console.error(err.message);
     } else {
       console.log('Connected to the database.');
-      const schema = fs.readFileSync('schema.sql').toString();
+      const schema = fs.readFileSync('./Database/schema.sql').toString();
       db.exec(schema, (err) => {
         if (err) {
           console.error(err.message);

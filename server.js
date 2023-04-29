@@ -1,15 +1,19 @@
 const express = require('express');
-const { initializeDatabase } = require('./db');
+const { initializeDatabase } = require('./Database/db.js');
 const fs = require('fs');
 const SQL = require('sql-template-strings')
 
 const cors = require('cors'); // Import the cors package
-
-
 const app = express();
 const port = 3000;
 app.use(cors());
 app.use(express.static('public'));
+
+// Read in nurse availability from JSON file
+const nurseAvailability = JSON.parse(fs.readFileSync('./Config/nurse_availability.json'));
+const trialDates = JSON.parse(fs.readFileSync('./Config/trial_dates.json'));
+console.log(trialDates)
+
 
 // Wrapper function for db.get() that returns a Promise
 function getPromise(query, params, db) {
@@ -24,11 +28,7 @@ function getPromise(query, params, db) {
     });
 }
 
-
-
-// Read in nurse availability from JSON file
-const nurseAvailability = JSON.parse(fs.readFileSync('nurse_availability.json'));
-
+ 
 initializeDatabase((db) => {
     // Set up middleware to parse JSON in request bodies
     app.use(express.json());
@@ -46,9 +46,10 @@ initializeDatabase((db) => {
     });
 
     // Set up the range of allowed dates for appointments
-    const startDate = new Date('2023-05-01');
-    const endDate = new Date('2023-08-01');
+    const startDate = new Date(trialDates.startDate);
+    const endDate = new Date(trialDates.endDate);
 
+    //Post appointments to database
     app.post('/appointments', async (req, res) => {
         const { participant_id, nurse_id, psychologist_id, researcher_id, appointment_type_id, start_time, end_time } = req.body;
 
@@ -59,7 +60,6 @@ initializeDatabase((db) => {
         }
 
         // Check that the start and end times are within the allowed times
-        
         const allowedStart = new Date(startDate);
         allowedStart.setUTCHours(8, 30, 0, 0);
         const allowedEnd = new Date(endDate);
@@ -95,10 +95,6 @@ initializeDatabase((db) => {
             const nurseStartTime = new Date(`2023-05-${dayOfWeek < 10 ? '0' : ''}${dayOfWeek}T${nurseSchedule.startTime}:00Z`);
             const nurseEndTime = new Date(`2023-08-${dayOfWeek < 10 ? '0' : ''}${dayOfWeek}T${nurseSchedule.endTime}:00Z`);
 
-            console.log(nurseStartTime)
-            console.log(nurseEndTime)
-            console.log(start)
-            console.log(end)
 
             // const conflictingAppointment = await db.get(
             //     `SELECT id FROM appointments WHERE nurse_id = ${nurse_id}`
@@ -160,6 +156,7 @@ initializeDatabase((db) => {
                 res.sendStatus(500);
             } else {
                 res.status(201).json({ id: this.lastID });
+                console.log("Appointment successfully added")
             }
         });
     });
