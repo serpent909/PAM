@@ -1,7 +1,7 @@
 const express = require('express');
 const { initializeDatabase, getPromise } = require('./Database/db.js');
 const ResourceBaseAvailabilityChecker = require('./Helpers/resourceBaseAvailabilityCheckerService.js');
-const appointments = require('./routes/appointments');
+const appointments = require('./routes/appointments.js');
 
 const fs = require('fs');
 const app = express();
