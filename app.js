@@ -27,6 +27,15 @@ const psychologistTwoAvailability = JSON.parse(
   fs.readFileSync('./Config/psychologist_2_availability.json')
 );
 
+function logResponse(req, res, next) {
+  const originalSend = res.send;
+  res.send = function () {
+    console.log(`Response for ${req.method} ${req.path}:`, arguments[0]);
+    originalSend.apply(res, arguments);
+  };
+  next();
+}
+
 db.initializeDatabase()
   .then((database) => {
     const checker = new ResourceBaseAvailabilityChecker(database, db.getPromise);
@@ -37,6 +46,8 @@ db.initializeDatabase()
     app.locals.nurseAvailability = nurseAvailability;
     app.locals.researcherAvailability = researcherAvailability;
     app.locals.trialAvailability = trialAvailability;
+
+    app.use(logResponse);
 
     app.use('/appointments', appointments);
 
