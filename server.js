@@ -14,6 +14,7 @@ const nurseAvailability = JSON.parse(fs.readFileSync('./Config/nurse_availabilit
 const researcherAvailability = JSON.parse(fs.readFileSync('./Config/researcher_availability.json'));
 const trialAvailability = JSON.parse(fs.readFileSync('./Config/trial_availability.json'));
 
+
 // Wrapper function for db.get() that returns a Promise
 function getPromise(query, params, db) {
     return new Promise((resolve, reject) => {
@@ -44,7 +45,6 @@ initializeDatabase((database) => {
 
         // Check that the start and end times are within the allowed times for the clinic
         const requestedStartTime = new Date(start_time);
-
         const requestedEndTime = new Date(end_time);
 
         // Check that the start and end times are within the allowed times
@@ -66,12 +66,12 @@ initializeDatabase((database) => {
             return;
         }
 
+        //Find resource base availability for the requested appointment day
+        const nurseSchedule = nurseAvailability.schedule.find(schedule => schedule.day === requestedStartTime.toLocaleDateString('en-US', { weekday: 'long' })); 
+        const researcherSchedule = researcherAvailability.schedule.find(schedule => schedule.day === requestedStartTime.toLocaleDateString('en-US', { weekday: 'long' }));
+
         // If the appointment type is a screening appointment
         if (appointment_type_id === 0) {
-
-            //Nurse logic
-            const nurseSchedule = nurseAvailability.schedule.find(schedule => schedule.day === requestedStartTime.toLocaleDateString('en-US', { weekday: 'long' }));
-            const researcherSchedule = researcherAvailability.schedule.find(schedule => schedule.day === requestedStartTime.toLocaleDateString('en-US', { weekday: 'long' }));
 
             const nurseResult = await checker.checkAvailability('Nurse', requestedStartTime, requestedEndTime, nurseSchedule);
             if (!nurseResult.available) {
@@ -133,16 +133,9 @@ app.get('/appointments', (req, res) => {
 });
 
 //Get all availability for screening appointments
-//TODO
-
+TODO:
 
 // Start the server
 app.listen(port, () => {
     console.log(`App listening at http://localhost:${port}`);
 });
-
-
-
-
-
-

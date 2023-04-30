@@ -23,13 +23,11 @@ class ResourceBaseAvailabilityChecker {
                 
                 `SELECT COUNT(*) as count FROM appointments WHERE ${resourceType.toLowerCase()}_id AND ((start_time <= ? AND end_time > ?) OR (start_time < ? AND end_time >= ?))`,
                 [requestedEndTime.toISOString(), requestedStartTime.toISOString(), requestedStartTime.toISOString(), requestedEndTime.toISOString()], this.db
-
             );
 
             if (overlappingAppointments.count > 0) {
                 return { available: false, message: `${resourceType} already has an appointment at this time start_time`};
             }
-
             return { available: true };
         } catch (err) {
             console.error('Error while checking resource availability:', err);
