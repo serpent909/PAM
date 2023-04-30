@@ -20,23 +20,34 @@ CREATE TABLE IF NOT EXISTS appointments (
 -- Create the 'bookable_things' table
 CREATE TABLE IF NOT EXISTS bookable_things (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
-    type TEXT NOT NULL UNIQUE
+    type TEXT NOT NULL
 );
 
 -- Populate 'bookable_things' with predefined types if they don't exist
 INSERT OR IGNORE INTO bookable_things (type) SELECT 'Participant'    WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Participant');
 INSERT OR IGNORE INTO bookable_things (type) SELECT 'Researcher'     WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Researcher');
 INSERT OR IGNORE INTO bookable_things (type) SELECT 'Nurse'          WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Nurse');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Psychologist_1' WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Psychologist_1');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Psychologist_2' WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Psychologist_2');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Psychologist_3' WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Psychologist_3');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Psychologist_4' WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Psychologist_4');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Psychologist_5' WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Psychologist_5');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Psychologist_6' WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Psychologist_6');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Psychologist_7' WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Psychologist_7');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Psychologist_8' WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Psychologist_8');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Room_1'         WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Room_1');
-INSERT OR IGNORE INTO bookable_things (type) SELECT 'Room_2'         WHERE NOT EXISTS (SELECT 1 FROM bookable_things WHERE type = 'Room_2');
+
+-- Insert 8 rows with the 'Psychologist' type
+INSERT OR IGNORE INTO bookable_things (type)
+SELECT 'Psychologist'
+FROM (SELECT 1 UNION SELECT 2 UNION SELECT 3 UNION SELECT 4 UNION SELECT 5 UNION SELECT 6 UNION SELECT 7 UNION SELECT 8) seq
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM bookable_things
+    WHERE type = 'Psychologist'
+);
+
+-- Insert 2 rows with the 'Room' type
+INSERT OR IGNORE INTO bookable_things (type)
+SELECT 'Room'
+FROM (SELECT 1 UNION SELECT 2) seq
+WHERE NOT EXISTS (
+    SELECT 1
+    FROM bookable_things
+    WHERE type = 'Room'
+);
+
 
 -- Create the 'booked_times' table
 CREATE TABLE IF NOT EXISTS booked_times (

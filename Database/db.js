@@ -20,4 +20,17 @@ function initializeDatabase(callback) {
   });
 }
 
-module.exports = { initializeDatabase };
+// Wrapper function for db.get() that returns a Promise
+function getPromise(query, params, db) {
+  return new Promise((resolve, reject) => {
+      db.get(query, params, (err, row) => {
+          if (err) {
+              reject(err);
+          } else {
+              resolve(row);
+          }
+      });
+  });
+}
+
+module.exports = { initializeDatabase, getPromise };
