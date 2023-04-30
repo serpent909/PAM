@@ -13,6 +13,7 @@
     "express": "^4.18.2",
     "nodemon": "^2.0.22",
     "sql-tagged-template-literal": "^1.2.0",
+    "sql-template-strings": "^2.2.2",
     "sqlite": "^4.1.2",
     "sqlite3": "^5.1.6"
   }

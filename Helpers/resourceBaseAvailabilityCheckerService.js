@@ -1,5 +1,3 @@
-
-
 class ResourceBaseAvailabilityChecker {
     constructor(db, getPromise) {
         this.db = db;
